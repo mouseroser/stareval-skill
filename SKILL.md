@@ -56,6 +56,27 @@ main（小光，编排中心）
 | review (swap gpt) | 高风险仲裁 | Step 5 |
 | docs | 最终定稿与交付整理 | Step 6 |
 
+## Workspace 架构
+
+### Main Agent 工作目录
+- `~/.openclaw/workspace/` - Main agent (小光) 的工作目录
+- `workspace/intel/` - Agent 协作层（单写者原则）
+  - `collaboration/` - 多 agent 联合工作的非正式产物（外部项目、本地镜像、共享分析素材等）
+- `workspace/shared-context/` - 跨 agent 共享上下文
+- `workspace/memory/` - 记忆文件
+
+### Sub-Agent 工作目录
+- `~/.openclaw/workspace/agents/gemini/` - 研究宪法产物
+- `~/.openclaw/workspace/agents/claude/` - 计划报告产物
+- `~/.openclaw/workspace/agents/review/` - 审查产物
+- `~/.openclaw/workspace/agents/docs/` - 文档产物
+
+### 文件传递规则
+- 每个 agent 在自己的 workspace 目录中生成工作产物（报告、审查结论、修复代码等）
+- 通过 `~/.openclaw/workspace/intel/` 目录传递摘要或索引（单写者原则）
+- 多 agent 联合工作的非正式产物（外部 GitHub 项目、本地镜像、共享分析素材等）统一放到 `intel/collaboration/`
+- Main agent 或其他 agent 直接读取对应 agent 的 workspace 目录获取完整产物
+
 ## Model Baseline
 
 | Step | 默认模型/执行者 | Thinking Level | 说明 |
