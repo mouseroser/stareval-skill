@@ -1,11 +1,13 @@
 ---
 name: xingjian-pipeline
-description: 星鉴流水线 v1.2。用于 GitHub 项目评估、外部方案吸收、技术路线报告与落地建议：Gemini 研究宪法 → Claude 主方案 → Review/Gemini 一致性复核 → Review/GPT 按需仲裁 → Docs 交付定稿。优化 Thinking Level 配置，预计降本 10-15%。
+description: 星鉴流水线 v2.0 正式版。轻量宪法 + NotebookLM 主研究双引擎：Gemini 快速扫描 → OpenAI 宪法简报（1-2 页核心约束）→ NotebookLM 深度研究（宪法作为首个 source，项目级研究操作系统）→ Claude 复核优化 → Gemini 一致性检查 → OpenAI/Claude 仲裁 → Docs 交付定稿。核心优势：规则驱动 + 资料驱动，避免"资料漂移"，预计研究深度提升 50-60%，方案完整性提升 40-50%，D 级质量提升 50-60%。
 ---
 
-# 星鉴流水线 v1.2
+# 星鉴流水线 v2.0（正式版）
 
-用于"读材料 → 提炼宪法 → 出方案 → 复核 → 交付报告"的专用流水线。
+**核心优势**：轻量宪法 + NotebookLM 主研究双引擎，规则驱动 + 资料驱动。
+
+用于"读材料 → 快速扫描 → 宪法简报 → 深度研究 → 复核优化 → 交付报告"的专用流水线。
 
 ## When This Skill Triggers
 
@@ -19,25 +21,55 @@ description: 星鉴流水线 v1.2。用于 GitHub 项目评估、外部方案吸
 ## Required Read
 
 执行前读取：
-1. `references/PIPELINE_FLOWCHART_V1_0_EMOJI.md`
-2. `references/pipeline-v1-contract.md`
-3. `references/launch-template.md`
-4. `references/report-contract-template.md`
+1. `references/pipeline-v2-0-contract.md` — v2.0 流水线合约（必读）
+2. `references/pipeline-v1-5-contract.md` — v1.5 流水线合约（回滚参考）
+3. `references/PIPELINE_FLOWCHART_V1_5_EMOJI.md` — 流程图（待更新为 v2.0）
+4. `references/launch-template.md`
+5. `references/report-contract-template.md`
 
-## Architecture: main 编排模式
+## Architecture: Launcher Script 模式
 
-`main` 是顶层编排中心，所有阶段由 `main` 串联。
+**一键启动，全自动推进。** Main 调用 `scripts/stareval-launcher.sh` 启动流水线，脚本内部自动串联所有步骤。
 
 ```
-main（小光，编排中心）
-├── Step 1：任务分级 + 报告类型判断
-├── Step 2：spawn gemini → 研究宪法 / 问题定义
-├── Step 3：spawn claude → 主方案 / 主报告
-├── Step 4：spawn gemini/review → 一致性复核
-├── Step 5：（按需）spawn gpt/review → 高风险仲裁
-├── Step 6：spawn docs → 交付定稿 / 结构整理
-└── Step 7：main → 汇总交付 + 通知
+main（小光）
+└── exec scripts/stareval-launcher.sh <task> <level> [materials-path]
+    ├── Step 1：任务分级 + 报告类型判断（脚本记录）
+    ├── Step 1.5：openclaw agent --agent gemini → 快速扫描（问题清单、盲点清单、待验证假设）
+    ├── Step 2A：openclaw agent --agent openai → 宪法简报（1-2 页核心约束）
+    ├── Step 2B：openclaw agent --agent notebooklm → 深度研究（宪法作为首个 source）
+    ├── Step 3：openclaw agent --agent claude → 复核优化（文字、结构、论证、找漏洞）
+    ├── Step 4：openclaw agent --agent gemini → 一致性检查（S/D 级）
+    ├── Step 5：openclaw agent --agent openai/claude → 仲裁（按需）
+    ├── Step 6：openclaw agent --agent docs → 交付定稿
+    └── Step 7：通知晨星确认
+
+**优势**：
+- Main 不在私聊里等待和轮询
+- 脚本自动串联，无需手动编排
+- 符合"主私聊不承载长编排"约束
+- 轻量宪法（规则约束）+ NotebookLM 主研究（深度理解）双引擎
+- 宪法作为 source，避免"资料驱动"漂移
 ```
+
+## Quick Start
+
+```bash
+# 启动星鉴流水线
+~/.openclaw/skills/stareval/scripts/stareval-launcher.sh \
+  "AI量化交易方案评估" \
+  D \
+  ~/.openclaw/workspace/intel/collaboration/ai-quant-book
+```
+
+## Execution Rules
+
+0. **一键启动，全自动推进。** Main 调用 `scripts/stareval-launcher.sh` 启动流水线，脚本内部自动串联所有步骤。除 Step 7 晨星确认外，中间步骤不停顿。
+1. Always start at Step 1 (Q/S/D classification).
+2. Q 级跳过 Step 2.5/4/5；S 级跳过 Step 5（按需触发）；D 级强制执行全流程。
+3. Launcher script handles all agent spawning; main only calls the script and receives final result.
+4. Use structured verdict flow exactly as defined.
+5. Enforce notification policy: agents push to their channels + monitor; main guarantees monitor visibility.
 
 ## Report Levels
 
@@ -50,10 +82,10 @@ main（小光，编排中心）
 | Agent | Role | Key Steps |
 |-------|------|-----------|
 | main | 编排、分级、交付 | Step 1, 7 |
-| gemini | 研究宪法 | Step 2 |
-| claude | 主方案 / 主报告 | Step 3 |
-| review (swap gemini) | 一致性复核 | Step 4 |
-| review (swap gpt) | 高风险仲裁 | Step 5 |
+| gemini | 快速扫描 + 一致性检查 | Step 1.5, Step 4 |
+| openai (gpt) | 宪法简报 + 仲裁 | Step 2A, Step 5 |
+| notebooklm | 深度研究（项目级研究操作系统） | Step 2B |
+| claude | 复核优化（文字、结构、论证、找漏洞） | Step 3 |
 | docs | 最终定稿与交付整理 | Step 6 |
 
 ## Workspace 架构
@@ -66,9 +98,10 @@ main（小光，编排中心）
 - `workspace/memory/` - 记忆文件
 
 ### Sub-Agent 工作目录
-- `~/.openclaw/workspace/agents/gemini/` - 研究宪法产物
-- `~/.openclaw/workspace/agents/claude/` - 计划报告产物
-- `~/.openclaw/workspace/agents/review/` - 审查产物
+- `~/.openclaw/workspace/agents/gemini/` - 研究扫描与复核产物
+- `~/.openclaw/workspace/agents/openai/` - 研究宪法与仲裁产物
+- `~/.openclaw/workspace/agents/claude/` - 主方案产物
+- `~/.openclaw/workspace/agents/review/` - 审查与仲裁索引产物
 - `~/.openclaw/workspace/agents/docs/` - 文档产物
 
 ### 文件传递规则
@@ -82,17 +115,22 @@ main（小光，编排中心）
 | Step | 默认模型/执行者 | Thinking Level | 说明 |
 |------|------------------|----------------|------|
 | Step 1 | `main / opus` | high | 判断任务类型、复杂度、是否需要仲裁 |
-| Step 2 | `gemini` | medium (Q) / high (S/D) | 读取材料，提炼问题宪法 |
-| Step 3 | `claude / opus` | medium (Q/S) / high (D) | 基于宪法产出主方案 |
-| Step 4 | `review / gemini` | medium | 一致性复核（spawn review 时 swap 到 gemini） |
-| Step 5 | `review / gpt`（按需） | high | 高风险仲裁（spawn review 时 swap 到 gpt） |
+| Step 1.5 | `gemini` | medium (Q) / high (S/D) | 快速扫描（问题清单、盲点清单、待验证假设） |
+| Step 2A | `openai (gpt)` | medium (Q) / high (S/D) | 宪法简报（1-2 页核心约束） |
+| Step 2B | `notebooklm / opus` | high | 深度研究（宪法作为首个 source） |
+| Step 3 | `claude / opus` | medium (Q/S) / high (D) | 复核优化（文字、结构、论证、找漏洞） |
+| Step 4 | `gemini` | medium | 一致性检查（Main 直接 spawn） |
+| Step 5 | `openai`（按需） | high | 高风险仲裁（Main 直接 spawn） |
 | Step 6 | `docs / minimax` | medium | 统一结构、排版、交付摘要 |
 | Step 7 | `main / opus` | high | 汇总与最终通知 |
 
 **模型动态指派说明：**
-- Step 4: spawn `review` agent 时动态覆盖：`model: "gemini/gemini-3.1-pro-preview", thinking: "medium"`
-- Step 5: spawn `review` agent 时动态覆盖：`model: "openai/gpt-5.4", thinking: "high"`
-- 都是 review agent，通过 swap 不同模型完成不同任务
+- Step 1.5: spawn `gemini` agent，使用 `gemini-3.1-pro-preview` 模型
+- Step 2A: spawn `openai` agent，使用 `gpt-5.4` 模型
+- Step 2B: spawn `notebooklm` agent，使用 `opus` 模型（内部调用 NotebookLM）
+- Step 3: spawn `claude` agent
+- Step 4: spawn `gemini` agent（main 直接 spawn）
+- Step 5: spawn `openai` 或 `claude` agent（main 直接 spawn，按独立性规则）
 
 **Thinking Level 优化策略：**
 - Q 级（快报）：降低 thinking level，提升速度
@@ -102,10 +140,12 @@ main（小光，编排中心）
 
 ## Constitution-First Rule
 
-- `gemini` 的研究产物不是最终方案，而是 **宪法 / 问题定义层**。
-- 下一步默认不是代码审查，而是 **`claude` 基于宪法出主方案**。
-- Step 4: spawn `review` agent 时动态 swap 到 `gemini` 模型进行一致性复核，检查方案是否偏离宪法。
-- Step 5: spawn `review` agent 时动态 swap 到 `gpt` 模型（`model: "openai/gpt-5.4"`），仅在高风险、明显漂移、重大分歧时进入仲裁链路。
+- `gemini` 的扫描产物是 **问题清单 / 盲点清单 / 待验证假设层**。
+- `openai` 基于 `gemini` 的扫描结果，输出 **宪法简报（1-2 页核心约束）**。
+- `notebooklm` 把宪法简报作为首个 source 导入，在宪法约束下进行 **深度研究并输出完整方案**。
+- `claude` 基于宪法基准，对 `notebooklm` 的方案进行 **复核与优化（文字、结构、论证、找漏洞）**。
+- Step 4: spawn `gemini` agent（main 直接 spawn），做一致性检查，检查前后矛盾、遗漏、偏题、结论与证据不匹配。
+- Step 5: spawn `openai` 或 `claude` agent（main 直接 spawn），执行独立仲裁，只处理争议点。
 - 不允许把"研究完成"直接误接成星链式代码交叉审查。
 
 ## Completion Contract
@@ -129,28 +169,33 @@ main（小光，编排中心）
 
 ## Planner Constraint
 
-- `claude` 是 Step 3 的主方案执行者。
-- Step 3 的 `claude` 在星鉴中承担"主方案位"，负责基于宪法产出完整报告。
-- Step 4: spawn `review` agent 时动态 swap 到 `gemini` 模型进行一致性复核。
-- Step 5: spawn `review` agent 时动态 swap 到 `gpt` 模型，仅在满足条件时进入仲裁位。
+- `openai` 是 Step 2A 的宪法简报制定者，负责输出 1-2 页核心约束（范围、定义、判定标准、禁止项、证据门槛、输出格式）。
+- `notebooklm` 是 Step 2B 的深度研究引擎（项目级研究操作系统），把宪法简报作为首个 source 导入，在宪法约束下输出完整方案。
+- `claude` 是 Step 3 的复核优化者，基于宪法基准评估方案，把研究结果变成更好的文字、结构和论证，找漏洞。
+- Step 4: spawn `gemini` agent（main 直接 spawn），进行一致性检查（前后矛盾、遗漏、偏题、结论与证据不匹配）。
+- Step 5: spawn `openai` 或 `claude` agent（main 直接 spawn），按独立性规则仲裁，只处理争议点。
 
-**Spawn 示例：**
+**独立性规则**：
+- 若 OpenAI 参与了 Step 2A 宪法简报，仲裁时优先使用 Claude
+- 若 Claude 参与了 Step 3 复核，仲裁时优先使用 OpenAI
+
+**Spawn 示例**：
 ```javascript
-// Step 4: spawn review 时 swap 到 gemini
+// Step 4: spawn gemini（main 直接 spawn）
 sessions_spawn(
-  agentId: "review",
+  agentId: "gemini",
   mode: "run",
-  model: "gemini/gemini-3.1-pro-preview",  // 动态覆盖模型
-  task: "检查 claude 主方案是否偏离 gemini 研究宪法...",
+  thinking: "medium",
+  task: "检查 notebooklm 方案的一致性：前后矛盾、遗漏、偏题、结论与证据不匹配...",
   runTimeoutSeconds: 300
 )
 
-// Step 5: spawn review 时 swap 到 gpt
+// Step 5: spawn openai 或 claude（main 直接 spawn，按独立性规则）
 sessions_spawn(
-  agentId: "review",
+  agentId: "openai", // 或 "claude"
   mode: "run",
-  model: "openai/gpt-5.4",  // 动态覆盖模型
-  task: "仲裁 claude 主方案与一致性复核的分歧...",
+  thinking: "high",
+  task: "仲裁 notebooklm 方案与一致性检查的分歧，只处理争议点...",
   runTimeoutSeconds: 300
 )
 ```

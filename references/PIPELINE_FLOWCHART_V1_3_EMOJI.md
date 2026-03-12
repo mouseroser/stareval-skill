@@ -1,4 +1,4 @@
-# 🔎 星鉴流水线 v1.0 — Constitution-First Report Delivery
+# 🔎 星鉴流水线 v1.3 — Constitution-First Report Delivery with Gemini Scan, GPT Constitution, Claude Plan, and Independent Arbitration
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -20,29 +20,49 @@
   4. 发启动通知 → 监控群
 
 ═══════════════════════════════════════════════════════════
-  🧭 Step 2 — Gemini 研究宪法
+  🧭 Step 2A — Gemini 研究扫描
 ═══════════════════════════════════════════════════════════
 
   🧵 gemini
 
   输入：原始材料 / 仓库 / 约束
-  产出：问题宪法
+  产出：研究扫描
+    • 核心问题
+    • 边界
+    • 假设
+    • 风险
+    • 路线候选
+    • 需要由宪法定稿的项
+
+  输出路径：`agents/gemini/reports/*-research-scan-*.md`
+  通知：织梦群 + 监控群
+
+═══════════════════════════════════════════════════════════
+  🧭 Step 2B — GPT 研究宪法
+═══════════════════════════════════════════════════════════
+
+  🤖 openai (gpt-5.4)
+
+  输入：Gemini 研究扫描 + 原始材料 / 约束
+  产出：最终研究宪法
     • 目标
+    • 非目标
     • 边界
     • 假设
     • 风险
     • 适配条件
-    • 不该做什么
+    • 验收标准
 
-  输出路径：`agents/gemini/reports/*-research-*.md`
+  输出路径：`agents/openai/reports/*-constitution-*.md`
+  通知：openai 群 + 监控群
 
 ═══════════════════════════════════════════════════════════
-  🧠 Step 3 — review/opus 主方案
+  🧠 Step 3 — Claude 主方案
 ═══════════════════════════════════════════════════════════
 
-  🔍 review / opus
+  🧑‍💼 claude (opus)
 
-  输入：Gemini 宪法
+  输入：GPT 宪法
   产出：主方案 / 主报告
     • 推荐架构位置
     • Phase 0 / 1 / 2 计划
@@ -51,33 +71,37 @@
     • 默认配置基线
     • 风险与回滚触发器
 
-  输出路径：方案 agent 自己目录
-
-  说明：
-     此处的 `review/opus` 承担主方案位
-     不是星链里的代码审查位
+  输出路径：`agents/claude/reports/*-plan-*.md`
+  通知：小克群 + 监控群
 
 ═══════════════════════════════════════════════════════════
-  ✅ Step 4 — Gemini 一致性复核
+  ✅ Step 4 — Review/Gemini 一致性复核
 ═══════════════════════════════════════════════════════════
 
-  🧵 gemini
+  🔎 review → 🧵 gemini
 
-  检查主方案是否偏离研究宪法
+  基于最终研究宪法检查主方案是否跑偏
   输出：ALIGN / DRIFT / MAJOR_DRIFT
 
-  ALIGN ✅       → Step 6
-  DRIFT ⚠️       → 回 Step 3 修订一次
-  MAJOR_DRIFT ❌ → Step 5
+  ALIGN ✅           → Step 6
+  DRIFT ⚠️          → 回 Step 3 修订一次
+  MAJOR_DRIFT ❌     → Step 5
+
+  通知：交叉审核群 + 监控群
 
 ═══════════════════════════════════════════════════════════
-  ⚖️ Step 5 — GPT / Review 仲裁（按需）
+  ⚖️ Step 5 — Review/OpenAI 或 Claude 仲裁（按需）
 ═══════════════════════════════════════════════════════════
 
-  🔍 review / GPT
+  🔎 review → 🤖 openai (gpt-5.4) / 🧑‍💼 claude (opus)
 
   仅在高风险 / 强分歧 / D 级时触发
+  默认由 openai 仲裁；若 GPT 同源则切换 claude 独立仲裁
+  按固定 rubric 仲裁，不自由发挥
+  输入：宪法 + 计划 + Gemini 复核发现的问题
   输出：GO / REVISE / BLOCK
+
+  通知：交叉审核群 + 监控群
 
 ═══════════════════════════════════════════════════════════
   📄 Step 6 — Docs 交付定稿
