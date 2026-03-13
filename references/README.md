@@ -20,3 +20,8 @@
 - Keep only current files, one previous reference, and supporting materials.
 - Older deprecated references have been removed to reduce prompt drift.
 - If a document conflicts with `pipeline-v1-3-contract.md`, follow the current contract.
+
+## Recent Update (2026-03-13)
+- Adopted **main-first** notification reliability as the default policy.
+- Sub-agent self-messaging is treated as **best-effort**, not as a reliable delivery guarantee.
+- Critical progress visibility should be guaranteed by `main`, not inferred from child-agent Telegram delivery.
