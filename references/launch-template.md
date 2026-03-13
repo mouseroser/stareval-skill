@@ -39,6 +39,12 @@
 ```text
 星鉴 Step 2：研究宪法任务
 
+**推送要求（必须执行）**：
+1. 开始时立即发送：
+   message(action="send", channel="telegram", target="-5131273722", message="【星鉴 Step 2】Gemini 研究宪法 - 开始")
+2. 完成时立即发送：
+   message(action="send", channel="telegram", target="-5131273722", message="【星鉴 Step 2】Gemini 研究宪法 - 完成\n\nTitle: <标题>\nConclusion: <结论>\nReportPath: <路径>")
+
 请阅读以下材料：
 - <repo/url/file>
 
@@ -46,11 +52,6 @@
 - 提炼问题定义、边界、约束、假设、风险
 - 给出适合我们系统的研究结论
 - 不要直接把研究报告当成最终实施方案
-
-通知要求：
-- 同时向职能群 + 监控群发送开始 / 关键进度 / 完成
-- 完成消息必须包含：Title / Conclusion / RecommendedRoute / Risks / ReportPath
-- main 仍会检查并在必要时补发监控群；不要假设 parent run 收尾后才会有监控群通知
 
 必须输出：
 - Title
@@ -68,14 +69,15 @@
 ```text
 星鉴 Step 3：主方案任务
 
+**推送要求（必须执行）**：
+1. 开始时立即发送：
+   message(action="send", channel="telegram", target="-5131273722", message="【星鉴 Step 3】Review 主方案 - 开始")
+2. 完成时立即发送：
+   message(action="send", channel="telegram", target="-5131273722", message="【星鉴 Step 3】Review 主方案 - 完成\n\nTitle: <标题>\nConclusion: <结论>\nReportPath: <路径>")
+
 把 Gemini 的研究报告视为宪法，不要重新定义问题。
 
 由 `review/opus` 基于这份宪法，产出适合我们系统的实施方案。
-
-通知要求：
-- 同时向职能群 + 监控群发送开始 / 关键进度 / 完成
-- 完成消息必须包含：Title / Conclusion / RecommendedArchitecture / PhasePlan / Risks / ReportPath
-- main 仍会检查并在必要时补发监控群；不要假设 parent run 收尾后才会有监控群通知
 
 必须包含：
 - RecommendedArchitecture
@@ -95,6 +97,12 @@
 ```text
 星鉴 Step 4：一致性复核
 
+**推送要求（必须执行）**：
+1. 开始时立即发送：
+   message(action="send", channel="telegram", target="-5131273722", message="【星鉴 Step 4】Gemini 一致性复核 - 开始")
+2. 完成时立即发送：
+   message(action="send", channel="telegram", target="-5131273722", message="【星鉴 Step 4】Gemini 一致性复核 - 完成\n\n判定: <ALIGN/DRIFT/MAJOR_DRIFT>\nReportPath: <路径>")
+
 请检查主方案是否偏离 Gemini 研究宪法。
 
 输出仅允许：
@@ -112,6 +120,12 @@
 
 ```text
 星鉴 Step 5：仲裁
+
+**推送要求（必须执行）**：
+1. 开始时立即发送：
+   message(action="send", channel="telegram", target="-5131273722", message="【星鉴 Step 5】仲裁 - 开始")
+2. 完成时立即发送：
+   message(action="send", channel="telegram", target="-5131273722", message="【星鉴 Step 5】仲裁 - 完成\n\n判定: <GO/REVISE/BLOCK>\nReportPath: <路径>")
 
 仅在高风险 / D 级 / 强分歧时进入。
 
